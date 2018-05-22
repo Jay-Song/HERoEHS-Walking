@@ -23,6 +23,7 @@ public:
 
   void initialize(double lipm_height_m, double preview_time_sec, double control_time_sec);
   void reInitialize(double lipm_height_m, double preview_time_sec, double control_time_sec);
+  void reInitialize();
 
   void calcNextPelvisXY(const Eigen::VectorXd& reference_zmp_x,  const Eigen::VectorXd& reference_zmp_y);
   Eigen::Vector3d x_lipm_, y_lipm_;

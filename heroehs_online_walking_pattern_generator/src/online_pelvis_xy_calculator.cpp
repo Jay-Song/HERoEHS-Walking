@@ -176,6 +176,15 @@ void OnlinePelvisXYCalculator::reInitialize(double lipm_height_m, double preview
   initialize(lipm_height_m, preview_time_sec, control_time_sec);
 }
 
+void OnlinePelvisXYCalculator::reInitialize()
+{
+  sum_of_zmp_x_ = 0;
+  sum_of_zmp_y_ = 0;
+  sum_of_cx_ = 0;
+  sum_of_cy_ = 0;
+  x_lipm_.fill(0.0);       y_lipm_.fill(0.0);
+}
+
 
 void OnlinePelvisXYCalculator::calcNextPelvisXY(const Eigen::VectorXd& reference_zmp_x,  const Eigen::VectorXd& reference_zmp_y)
 {

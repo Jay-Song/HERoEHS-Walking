@@ -172,6 +172,43 @@ void OnlineEndpointCalculator::initialize(double lipm_height_m, double preview_t
   step_data_mutex_lock_.unlock();
 }
 
+void OnlineEndpointCalculator::reInitialize()
+{
+  walking_time_ = 0; reference_time_ = 0;
+
+  Eigen::Matrix4d mat_g_to_pelvis = robotis_framework::getTransformationXYZRPY(previous_step_body_pose_.x, previous_step_body_pose_.y, previous_step_body_pose_.z,
+      previous_step_body_pose_.roll, previous_step_body_pose_.pitch, previous_step_body_pose_.yaw);
+  Eigen::Matrix4d mat_g_to_rfoot = robotis_framework::getTransformationXYZRPY(previous_step_right_foot_pose_.x, previous_step_right_foot_pose_.y, previous_step_right_foot_pose_.z,
+      previous_step_right_foot_pose_.roll, previous_step_right_foot_pose_.pitch, previous_step_right_foot_pose_.yaw);
+  Eigen::Matrix4d mat_g_to_lfoot = robotis_framework::getTransformationXYZRPY(previous_step_left_foot_pose_.x, previous_step_left_foot_pose_.y, previous_step_left_foot_pose_.z,
+      previous_step_left_foot_pose_.roll, previous_step_left_foot_pose_.pitch, previous_step_left_foot_pose_.yaw);
+
+  Eigen::Matrix4d mat_robot_to_pelvis = robotis_framework::getRotation4d(previous_step_body_pose_.roll, previous_step_body_pose_.pitch, 0);
+  Eigen::Matrix4d mat_pelvis_to_g = robotis_framework::getInverseTransformation(mat_g_to_pelvis);
+
+  Eigen::Matrix4d mat_robot_to_rfoot = (mat_robot_to_pelvis * mat_pelvis_to_g) * mat_g_to_rfoot;
+  Eigen::Matrix4d mat_robot_to_lfoot = (mat_robot_to_pelvis * mat_pelvis_to_g) * mat_g_to_lfoot;
+
+
+  previous_step_body_pose_       = robotis_framework::getPose3DfromTransformMatrix(mat_robot_to_pelvis);
+  previous_step_right_foot_pose_ = robotis_framework::getPose3DfromTransformMatrix(mat_robot_to_rfoot);
+  previous_step_left_foot_pose_  = robotis_framework::getPose3DfromTransformMatrix(mat_robot_to_lfoot);
+
+  present_body_pose_       = previous_step_body_pose_;
+  present_right_foot_pose_ = previous_step_right_foot_pose_;
+  present_left_foot_pose_  = previous_step_left_foot_pose_;
+
+  reference_step_data_for_addition_.position_data.body_pose = previous_step_body_pose_;
+  reference_step_data_for_addition_.position_data.right_foot_pose = previous_step_right_foot_pose_;
+  reference_step_data_for_addition_.position_data.left_foot_pose = previous_step_left_foot_pose_;
+
+  step_idx_data_.fill(NO_STEP_IDX);
+  reference_zmp_x_.fill(0.5*(present_right_foot_pose_.x + present_left_foot_pose_.x));
+  reference_zmp_y_.fill(0.5*(present_right_foot_pose_.y + present_left_foot_pose_.y));
+
+  xy_calculator_.reInitialize();
+}
+
 void OnlineEndpointCalculator::addStepData(robotis_framework::StepData step_data)
 {
   step_data_mutex_lock_.lock();
@@ -249,6 +286,7 @@ void OnlineEndpointCalculator::calcStepIdxData()
       {
         step_idx_data_.fill(NO_STEP_IDX);
         current_step_data_status_ = StepDataStatus4;
+        reInitialize();
         running = false;
       }
       else
@@ -452,7 +490,7 @@ void OnlineEndpointCalculator::calcRefZMP()
 
 void OnlineEndpointCalculator::calcEndPoint()
 {
-  if(!running)
+  if(running == false)
     return;
 
   if((added_step_data_.size() == 0) || !running)
@@ -696,21 +734,19 @@ void OnlineEndpointCalculator::calcEndPoint()
 
   walking_time_ += control_time_sec_;
 
-  if(walking_time_ > added_step_data_[added_step_data_.size() - 1].time_data.abs_step_time - 0.5*0.001)
-  {
-    running = false;
-    calcStepIdxData();
-    //reInitialize();
-  }
+//  if(walking_time_ > added_step_data_[added_step_data_.size() - 1].time_data.abs_step_time - 0.5*0.001)
+//  {
+//    running = false;
+//    //calcStepIdxData();
+//  }
 }
 
 void OnlineEndpointCalculator::calcDesiredPose()
 {
-
   step_data_mutex_lock_.lock();
   calcStepIdxData();
-  calcRefZMP();
   calcEndPoint();
+  calcRefZMP();
   step_data_mutex_lock_.unlock();
 
   xy_calculator_.calcNextPelvisXY(reference_zmp_x_, reference_zmp_y_);

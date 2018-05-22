@@ -21,6 +21,7 @@ public:
   ~OnlineEndpointCalculator();
 
   void initialize(double lipm_height_m, double preview_time_sec, double control_time_sec);
+  void reInitialize();
 
   void addStepData(robotis_framework::StepData step_data);
   void eraseLastStepData();
