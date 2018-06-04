@@ -30,6 +30,7 @@ find_package(Eigen3 REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES heroehs_pd_balance_controller
+  CATKIN_DEPENDS roscpp robotis_math heroehs_math
 )
 
 ###########
