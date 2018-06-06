@@ -177,6 +177,8 @@ void OnlineEndpointCalculator::initialize(double lipm_height_m, double preview_t
   reference_zmp_y_.fill(0.5*(present_right_foot_pose_.y + present_left_foot_pose_.y));
 
   step_data_mutex_lock_.unlock();
+
+  x_lipm_.fill(0.0);       y_lipm_.fill(0.0);
 }
 
 void OnlineEndpointCalculator::reInitialize()
@@ -214,6 +216,7 @@ void OnlineEndpointCalculator::reInitialize()
   reference_zmp_y_.fill(0.5*(present_right_foot_pose_.y + present_left_foot_pose_.y));
 
   xy_calculator_.reInitialize();
+  x_lipm_.fill(0.0);       y_lipm_.fill(0.0);
 }
 
 void OnlineEndpointCalculator::addStepData(robotis_framework::StepData step_data)
@@ -1176,6 +1179,9 @@ void OnlineEndpointCalculator::calcDesiredPose()
   xy_calculator_.calcNextPelvisXY(reference_zmp_x_, reference_zmp_y_);
   present_body_pose_.x = xy_calculator_.x_lipm_.coeff(0);
   present_body_pose_.y = xy_calculator_.y_lipm_.coeff(0);
+
+  x_lipm_ = xy_calculator_.x_lipm_;
+  y_lipm_ = xy_calculator_.y_lipm_;
 
   //std::cout << reference_zmp_x_.coeff(0,0) << " " << reference_zmp_y_.coeff(0,0) << " " << present_body_pose_ << " " << present_right_foot_pose_ << " " << present_left_foot_pose_ << std::endl;
 

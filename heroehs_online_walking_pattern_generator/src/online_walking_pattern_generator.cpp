@@ -21,6 +21,7 @@ OnlineWalkingPatternGenerator::~OnlineWalkingPatternGenerator()
 
 void OnlineWalkingPatternGenerator::initialize(double lipm_height_m, double preview_time_sec, double control_time_sec)
 {
+  x_lipm_.fill(0.0);       y_lipm_.fill(0.0);
   ep_calculator_.initialize(lipm_height_m, preview_time_sec, control_time_sec);
   process();
 }
@@ -32,6 +33,9 @@ void OnlineWalkingPatternGenerator::process()
   switching_ratio_ = ep_calculator_.switching_ratio_;
 
   current_balancing_index_ = ep_calculator_.current_balancing_index_;
+
+  x_lipm_ = ep_calculator_.x_lipm_;
+  y_lipm_ = ep_calculator_.y_lipm_;
 
   mat_g_to_rfoot_  = robotis_framework::getTransformationXYZRPY(ep_calculator_.present_right_foot_pose_.x, ep_calculator_.present_right_foot_pose_.y, ep_calculator_.present_right_foot_pose_.z,
       ep_calculator_.present_right_foot_pose_.roll, ep_calculator_.present_right_foot_pose_.pitch, ep_calculator_.present_right_foot_pose_.yaw);

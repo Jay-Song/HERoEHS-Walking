@@ -43,6 +43,8 @@ public:
 
   double switching_ratio_;
 
+  Eigen::Vector3d x_lipm_, y_lipm_;
+
 private:
   OnlinePelvisXYCalculator xy_calculator_;
 
