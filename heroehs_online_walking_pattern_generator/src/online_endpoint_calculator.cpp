@@ -20,6 +20,9 @@ static const int LEFT_FOOT_SWING  = 1;
 static const int RIGHT_FOOT_SWING = 2;
 static const int STANDING = 3;
 
+
+//L -- O -- R
+//1 -- 0 -- -1
 static const int BalancingPhase0 = 0; // DSP : START
 static const int BalancingPhase1 = 1; // DSP : R--O->L
 static const int BalancingPhase2 = 2; // SSP : L_BALANCING1
@@ -90,6 +93,8 @@ OnlineEndpointCalculator::OnlineEndpointCalculator()
   preview_size_ = round(preview_time_sec_/control_time_sec_);
 
   running = false;
+
+  switching_ratio_ = 0;
 }
 
 OnlineEndpointCalculator::~OnlineEndpointCalculator()
@@ -114,6 +119,8 @@ void OnlineEndpointCalculator::initialize(double lipm_height_m, double preview_t
 {
   if(running)
     return;
+
+  smooth_tra_.changeTrajectory(0,0,0,0,1,1,0,0);
 
   xy_calculator_.initialize(lipm_height_m, preview_time_sec, control_time_sec);
 
@@ -245,6 +252,8 @@ int  OnlineEndpointCalculator::getNumofRemainingUnreservedStepData()
 
 void OnlineEndpointCalculator::getReferenceStepDatafotAddition(robotis_framework::StepData *ref_step_data_for_addition)
 {
+  reference_step_data_for_addition_.position_data.x_zmp_shift = 0;
+  reference_step_data_for_addition_.position_data.y_zmp_shift = 0;
   reference_step_data_for_addition_.time_data.start_time_delay_ratio_x = 0.0;
   reference_step_data_for_addition_.time_data.start_time_delay_ratio_y = 0.0;
   reference_step_data_for_addition_.time_data.start_time_delay_ratio_z = 0.0;
@@ -539,7 +548,14 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
   double support_foot_y = 0;
   double support_foot_yaw = 0;
 
+  double feet_center_x = 0;
+  double feet_center_y = 0;
+
+  double zmp_moving_ratio = 0;
+
   double desired_zmp_x = 0, desired_zmp_y = 0;
+
+  double period_time, ssp_time_start, ssp_time_end, calc_curr_time, calc_ref_time;
 
   if(walking_time_ == 0)
   {
@@ -562,6 +578,24 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
       {
         if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING)
         {
+          if(step_idx == 0)
+          {
+            period_time = added_step_data_[step_idx].time_data.abs_step_time - reference_time_;
+            calc_ref_time = reference_time_;
+          }
+          else
+          {
+            period_time = added_step_data_[step_idx].time_data.abs_step_time - added_step_data_[step_idx-1].time_data.abs_step_time;
+            calc_ref_time = added_step_data_[step_idx-1].time_data.abs_step_time;
+          }
+
+          added_step_data_[step_idx].time_data.dsp_ratio;
+
+          ssp_time_start = added_step_data_[step_idx].time_data.dsp_ratio * period_time*0.5 + calc_ref_time;
+          ssp_time_end = (2 - added_step_data_[step_idx].time_data.dsp_ratio)*period_time*0.5 + calc_ref_time;
+
+          calc_curr_time = walking_time_ + ref_zmp_idx*control_time_sec_;
+          //std::cout << walking_time_<< " " << calc_curr_time <<  " " << calc_ref_time  <<  " " << ssp_time_start  <<  " " << ssp_time_end << " " << added_step_data_[step_idx].time_data.abs_step_time << std::endl;
           if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
           {
             support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
@@ -573,8 +607,39 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
             desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
                             + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
 
-            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
-            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+            if(calc_curr_time < ssp_time_start)
+            {
+              if(step_idx == 0)
+              {
+                feet_center_x = 0.5*(previous_step_right_foot_pose_.x + previous_step_left_foot_pose_.x);
+                feet_center_y = 0.5*(previous_step_right_foot_pose_.y + previous_step_left_foot_pose_.y);
+              }
+              else
+              {
+                feet_center_x = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.x + added_step_data_[step_idx-1].position_data.right_foot_pose.x);
+                feet_center_y = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.y + added_step_data_[step_idx-1].position_data.right_foot_pose.y);
+              }
+
+              zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - calc_ref_time)/(ssp_time_start - calc_ref_time));
+
+              reference_zmp_x_(ref_zmp_idx, 0) = feet_center_x + (desired_zmp_x - feet_center_x)*zmp_moving_ratio;
+              reference_zmp_y_(ref_zmp_idx, 0) = feet_center_y + (desired_zmp_y - feet_center_y)*zmp_moving_ratio;
+            }
+            else if(calc_curr_time <= ssp_time_end)
+            {
+              reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+              reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+            }
+            else
+            {
+              feet_center_x = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x);
+              feet_center_y = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y);
+
+              zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - ssp_time_end)/(added_step_data_[step_idx].time_data.abs_step_time - ssp_time_end));
+
+              reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x + (feet_center_x - desired_zmp_x)*zmp_moving_ratio;
+              reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y + (feet_center_y - desired_zmp_y)*zmp_moving_ratio;
+            }
           }
           else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
           {
@@ -587,8 +652,39 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
             desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
                             + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
 
-            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
-            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+            if(calc_curr_time < ssp_time_start)
+            {
+              if(step_idx == 0)
+              {
+                feet_center_x = 0.5*(previous_step_right_foot_pose_.x + previous_step_left_foot_pose_.x);
+                feet_center_y = 0.5*(previous_step_right_foot_pose_.y + previous_step_left_foot_pose_.y);
+              }
+              else
+              {
+                feet_center_x = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.x + added_step_data_[step_idx-1].position_data.right_foot_pose.x);
+                feet_center_y = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.y + added_step_data_[step_idx-1].position_data.right_foot_pose.y);
+              }
+
+              zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - calc_ref_time)/(ssp_time_start - calc_ref_time));
+
+              reference_zmp_x_(ref_zmp_idx, 0) = feet_center_x + (desired_zmp_x - feet_center_x)*zmp_moving_ratio;
+              reference_zmp_y_(ref_zmp_idx, 0) = feet_center_y + (desired_zmp_y - feet_center_y)*zmp_moving_ratio;
+            }
+            else if(calc_curr_time <= ssp_time_end)
+            {
+              reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+              reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+            }
+            else
+            {
+              feet_center_x = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x);
+              feet_center_y = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y);
+
+              zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - ssp_time_end)/(added_step_data_[step_idx].time_data.abs_step_time - ssp_time_end));
+
+              reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x + (feet_center_x - desired_zmp_x)*zmp_moving_ratio;
+              reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y + (feet_center_y - desired_zmp_y)*zmp_moving_ratio;
+            }
           }
           else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
           {
@@ -640,6 +736,25 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
     {
       if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING)
       {
+        if(step_idx == 0)
+        {
+          period_time = added_step_data_[step_idx].time_data.abs_step_time - reference_time_;
+          calc_ref_time = reference_time_;
+        }
+        else
+        {
+          period_time = added_step_data_[step_idx].time_data.abs_step_time - added_step_data_[step_idx-1].time_data.abs_step_time;
+          calc_ref_time = added_step_data_[step_idx-1].time_data.abs_step_time;
+        }
+
+        added_step_data_[step_idx].time_data.dsp_ratio;
+
+        ssp_time_start = added_step_data_[step_idx].time_data.dsp_ratio * period_time*0.5 + calc_ref_time;
+        ssp_time_end = (2 - added_step_data_[step_idx].time_data.dsp_ratio)*period_time*0.5 + calc_ref_time;
+
+        calc_curr_time = walking_time_ + ref_zmp_idx*control_time_sec_;
+        //std::cout << walking_time_<< " " << calc_curr_time <<  " " << calc_ref_time  <<  " " << ssp_time_start  <<  " " << ssp_time_end << " " << added_step_data_[step_idx].time_data.abs_step_time << std::endl;
+
         if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
         {
           support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
@@ -651,8 +766,41 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
           desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
                           + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
 
-          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
-          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          //std::cout << support_foot_x << " " << support_foot_y  << " " <<  desired_zmp_x << " " << desired_zmp_y  << " " <<  added_step_data_[step_idx].position_data.x_zmp_shift << " " << added_step_data_[step_idx].position_data.y_zmp_shift << std::endl;
+
+          if(calc_curr_time < ssp_time_start)
+          {
+            if(step_idx == 0)
+            {
+              feet_center_x = 0.5*(previous_step_right_foot_pose_.x + previous_step_left_foot_pose_.x);
+              feet_center_y = 0.5*(previous_step_right_foot_pose_.y + previous_step_left_foot_pose_.y);
+            }
+            else
+            {
+              feet_center_x = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.x + added_step_data_[step_idx-1].position_data.right_foot_pose.x);
+              feet_center_y = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.y + added_step_data_[step_idx-1].position_data.right_foot_pose.y);
+            }
+
+            zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - calc_ref_time)/(ssp_time_start - calc_ref_time));
+
+            reference_zmp_x_(ref_zmp_idx, 0) = feet_center_x + (desired_zmp_x - feet_center_x)*zmp_moving_ratio;
+            reference_zmp_y_(ref_zmp_idx, 0) = feet_center_y + (desired_zmp_y - feet_center_y)*zmp_moving_ratio;
+          }
+          else if(calc_curr_time <= ssp_time_end)
+          {
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          }
+          else
+          {
+            feet_center_x = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x);
+            feet_center_y = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y);
+
+            zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - ssp_time_end)/(added_step_data_[step_idx].time_data.abs_step_time - ssp_time_end));
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x + (feet_center_x - desired_zmp_x)*zmp_moving_ratio;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y + (feet_center_y - desired_zmp_y)*zmp_moving_ratio;
+          }
         }
         else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
         {
@@ -665,8 +813,41 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
           desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
                           + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
 
-          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
-          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          //std::cout << support_foot_x << " " << support_foot_y  << " " <<  desired_zmp_x << " " << desired_zmp_y  << " " <<  added_step_data_[step_idx].position_data.x_zmp_shift << " " << added_step_data_[step_idx].position_data.y_zmp_shift << std::endl;
+
+          if(calc_curr_time < ssp_time_start)
+          {
+            if(step_idx == 0)
+            {
+              feet_center_x = 0.5*(previous_step_right_foot_pose_.x + previous_step_left_foot_pose_.x);
+              feet_center_y = 0.5*(previous_step_right_foot_pose_.y + previous_step_left_foot_pose_.y);
+            }
+            else
+            {
+              feet_center_x = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.x + added_step_data_[step_idx-1].position_data.right_foot_pose.x);
+              feet_center_y = 0.5*(added_step_data_[step_idx-1].position_data.left_foot_pose.y + added_step_data_[step_idx-1].position_data.right_foot_pose.y);
+            }
+
+            zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - calc_ref_time)/(ssp_time_start - calc_ref_time));
+
+            reference_zmp_x_(ref_zmp_idx, 0) = feet_center_x + (desired_zmp_x - feet_center_x)*zmp_moving_ratio;
+            reference_zmp_y_(ref_zmp_idx, 0) = feet_center_y + (desired_zmp_y - feet_center_y)*zmp_moving_ratio;
+          }
+          else if(calc_curr_time <= ssp_time_end)
+          {
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          }
+          else
+          {
+            feet_center_x = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x);
+            feet_center_y = 0.5*(added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y);
+
+            zmp_moving_ratio = smooth_tra_.getPosition((calc_curr_time - ssp_time_end)/(added_step_data_[step_idx].time_data.abs_step_time - ssp_time_end));
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x + (feet_center_x - desired_zmp_x)*zmp_moving_ratio;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y + (feet_center_y - desired_zmp_y)*zmp_moving_ratio;
+          }
         }
         else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
         {
@@ -697,6 +878,7 @@ void OnlineEndpointCalculator::calcSmoothRefZMP()
     }
   }
 }
+
 void OnlineEndpointCalculator::calcEndPoint()
 {
   if(running == false)
@@ -842,12 +1024,24 @@ void OnlineEndpointCalculator::calcEndPoint()
     c_move = foot_yaw_tra_.getPosition(ssp_time_start);
 
     z_vibe = foot_z_swap_tra_.getPosition(ssp_time_start);
+
+    switching_ratio_ = smooth_tra_.getPosition((walking_time_ - reference_time_)/(ssp_time_start - reference_time_));
+
     if(added_step_data_[0].position_data.moving_foot == RIGHT_FOOT_SWING)
+    {
       current_balancing_index_ = BalancingPhase1;
+      switching_ratio_ =  1.0*switching_ratio_ ;
+    }
     else if(added_step_data_[0].position_data.moving_foot == LEFT_FOOT_SWING)
+    {
       current_balancing_index_ = BalancingPhase5;
+      switching_ratio_ =  -1.0*switching_ratio_ ;
+    }
     else
+    {
       current_balancing_index_ = BalancingPhase0;
+      switching_ratio_ = 0;
+    }
   }
   else if( walking_time_ <= ssp_time_end)
   {
@@ -882,6 +1076,8 @@ void OnlineEndpointCalculator::calcEndPoint()
         current_balancing_index_ = BalancingPhase2;
       else
         current_balancing_index_ = BalancingPhase3;
+
+      switching_ratio_ =  1;
     }
     else if(added_step_data_[0].position_data.moving_foot == LEFT_FOOT_SWING)
     {
@@ -889,9 +1085,14 @@ void OnlineEndpointCalculator::calcEndPoint()
         current_balancing_index_ = BalancingPhase6;
       else
         current_balancing_index_ = BalancingPhase7;
+
+      switching_ratio_ =  -1;
     }
     else
+    {
       current_balancing_index_ = BalancingPhase0;
+      switching_ratio_ =  0;
+    }
   }
   else
   {
@@ -904,12 +1105,24 @@ void OnlineEndpointCalculator::calcEndPoint()
 
     z_vibe = foot_z_swap_tra_.getPosition(ssp_time_end);
 
+    switching_ratio_ = smooth_tra_.getPosition((walking_time_ - ssp_time_end)/(added_step_data_[0].time_data.abs_step_time - ssp_time_end));
+    switching_ratio_ = 1 - switching_ratio_;
+
     if(added_step_data_[0].position_data.moving_foot == RIGHT_FOOT_SWING)
+    {
       current_balancing_index_ = BalancingPhase4;
+      switching_ratio_ =  1.0*switching_ratio_ ;
+    }
     else if(added_step_data_[0].position_data.moving_foot == LEFT_FOOT_SWING)
+    {
       current_balancing_index_ = BalancingPhase8;
+      switching_ratio_ =  -1.0*switching_ratio_ ;
+    }
     else
+    {
       current_balancing_index_ = BalancingPhase0;
+      switching_ratio_ =  0.0;
+    }
   }
 
 
@@ -952,15 +1165,21 @@ void OnlineEndpointCalculator::calcEndPoint()
 
 void OnlineEndpointCalculator::calcDesiredPose()
 {
+  //std::cout << walking_time_ << " ";
   step_data_mutex_lock_.lock();
   calcStepIdxData();
   calcEndPoint();
-  calcRefZMP();
+  //calcRefZMP();
+  calcSmoothRefZMP();
   step_data_mutex_lock_.unlock();
 
   xy_calculator_.calcNextPelvisXY(reference_zmp_x_, reference_zmp_y_);
   present_body_pose_.x = xy_calculator_.x_lipm_.coeff(0);
   present_body_pose_.y = xy_calculator_.y_lipm_.coeff(0);
+
+  //std::cout << reference_zmp_x_.coeff(0,0) << " " << reference_zmp_y_.coeff(0,0) << " " << present_body_pose_ << " " << present_right_foot_pose_ << " " << present_left_foot_pose_ << std::endl;
+
+  //std::cout << switching_ratio_ << std::endl;
 }
 
 void OnlineEndpointCalculator::start()

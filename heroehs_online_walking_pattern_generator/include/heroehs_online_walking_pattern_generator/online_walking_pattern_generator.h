@@ -41,6 +41,8 @@ public:
 
   int current_balancing_index_;
 
+  double switching_ratio_;
+
 private:
   OnlineEndpointCalculator ep_calculator_;
 

@@ -41,6 +41,8 @@ public:
   int current_balancing_index_;
   int current_step_data_status_;
 
+  double switching_ratio_;
+
 private:
   OnlinePelvisXYCalculator xy_calculator_;
 
@@ -75,7 +77,7 @@ private:
 
   boost::mutex step_data_mutex_lock_;
 
-
+  robotis_framework::FifthOrderPolynomialTrajectory smooth_tra_;
 };
 
 }

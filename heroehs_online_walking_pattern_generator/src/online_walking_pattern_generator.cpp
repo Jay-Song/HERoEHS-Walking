@@ -13,6 +13,7 @@ using namespace heroehs;
 OnlineWalkingPatternGenerator::OnlineWalkingPatternGenerator()
 {
   current_balancing_index_ = 0;
+  switching_ratio_ = 0;
 }
 
 OnlineWalkingPatternGenerator::~OnlineWalkingPatternGenerator()
@@ -27,6 +28,10 @@ void OnlineWalkingPatternGenerator::initialize(double lipm_height_m, double prev
 void OnlineWalkingPatternGenerator::process()
 {
   ep_calculator_.calcDesiredPose();
+
+  switching_ratio_ = ep_calculator_.switching_ratio_;
+
+  current_balancing_index_ = ep_calculator_.current_balancing_index_;
 
   mat_g_to_rfoot_  = robotis_framework::getTransformationXYZRPY(ep_calculator_.present_right_foot_pose_.x, ep_calculator_.present_right_foot_pose_.y, ep_calculator_.present_right_foot_pose_.z,
       ep_calculator_.present_right_foot_pose_.roll, ep_calculator_.present_right_foot_pose_.pitch, ep_calculator_.present_right_foot_pose_.yaw);
