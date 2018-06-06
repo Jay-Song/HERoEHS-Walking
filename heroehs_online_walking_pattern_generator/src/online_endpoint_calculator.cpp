@@ -366,6 +366,13 @@ void OnlineEndpointCalculator::calcRefZMP()
 {
   int ref_zmp_idx = 0;
   int step_idx = 0;
+
+  double support_foot_x = 0;
+  double support_foot_y = 0;
+  double support_foot_yaw = 0;
+
+  double desired_zmp_x = 0, desired_zmp_y = 0;
+
   if(walking_time_ == 0)
   {
     if((step_idx_data_(ref_zmp_idx) == NO_STEP_IDX)/* && (m_StepData.size() == 0)*/)
@@ -389,13 +396,31 @@ void OnlineEndpointCalculator::calcRefZMP()
         {
           if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
           {
-            reference_zmp_x_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.left_foot_pose.x;
-            reference_zmp_y_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.left_foot_pose.y;
+            support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
+            support_foot_y = added_step_data_[step_idx].position_data.left_foot_pose.y;
+            support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+            desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                            - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+            desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                            + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
           }
           else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
           {
-            reference_zmp_x_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.right_foot_pose.x;
-            reference_zmp_y_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.right_foot_pose.y;
+            support_foot_x = added_step_data_[step_idx].position_data.right_foot_pose.x;
+            support_foot_y = added_step_data_[step_idx].position_data.right_foot_pose.y;
+            support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+            desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                            - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+            desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                            + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
           }
           else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
           {
@@ -449,13 +474,31 @@ void OnlineEndpointCalculator::calcRefZMP()
       {
         if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
         {
-          reference_zmp_x_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.left_foot_pose.x;
-          reference_zmp_y_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.left_foot_pose.y;
+          support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
+          support_foot_y = added_step_data_[step_idx].position_data.left_foot_pose.y;
+          support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+          desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                          - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+          desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                          + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
         }
         else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
         {
-          reference_zmp_x_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.right_foot_pose.x;
-          reference_zmp_y_(ref_zmp_idx, 0) = added_step_data_[step_idx].position_data.right_foot_pose.y;
+          support_foot_x = added_step_data_[step_idx].position_data.right_foot_pose.x;
+          support_foot_y = added_step_data_[step_idx].position_data.right_foot_pose.y;
+          support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+          desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                          - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+          desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                          + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
         }
         else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
         {
@@ -487,7 +530,173 @@ void OnlineEndpointCalculator::calcRefZMP()
   }
 }
 
+void OnlineEndpointCalculator::calcSmoothRefZMP()
+{
+  int ref_zmp_idx = 0;
+  int step_idx = 0;
 
+  double support_foot_x = 0;
+  double support_foot_y = 0;
+  double support_foot_yaw = 0;
+
+  double desired_zmp_x = 0, desired_zmp_y = 0;
+
+  if(walking_time_ == 0)
+  {
+    if((step_idx_data_(ref_zmp_idx) == NO_STEP_IDX)/* && (m_StepData.size() == 0)*/)
+    {
+      reference_zmp_x_.fill((present_left_foot_pose_.x + present_right_foot_pose_.x)*0.5);
+      reference_zmp_y_.fill((present_left_foot_pose_.y + present_right_foot_pose_.y)*0.5);
+      return;
+    }
+
+    for(ref_zmp_idx = 0; ref_zmp_idx < preview_size_;  ref_zmp_idx++)
+    {
+      step_idx = step_idx_data_(ref_zmp_idx);
+      if(step_idx == NO_STEP_IDX)
+      {
+        reference_zmp_x_(ref_zmp_idx, 0) = reference_zmp_x_(ref_zmp_idx - 1, 0);
+        reference_zmp_y_(ref_zmp_idx, 0) = reference_zmp_y_(ref_zmp_idx - 1, 0);
+      }
+      else
+      {
+        if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING)
+        {
+          if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
+          {
+            support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
+            support_foot_y = added_step_data_[step_idx].position_data.left_foot_pose.y;
+            support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+            desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                            - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+            desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                            + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          }
+          else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
+          {
+            support_foot_x = added_step_data_[step_idx].position_data.right_foot_pose.x;
+            support_foot_y = added_step_data_[step_idx].position_data.right_foot_pose.y;
+            support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+            desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                            - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+            desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                            + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+            reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+            reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+          }
+          else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
+          {
+            reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+            reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+          }
+          else
+          {
+            reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+            reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+          }
+        }
+        else if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING_STARTING)
+        {
+          reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+          reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+        }
+        else if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING_ENDING)
+        {
+          reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+          reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+        }
+        else
+        {
+          reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+          reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+        }
+      }
+    }
+  }
+  else
+  {
+    step_idx = step_idx_data_(preview_size_ - 1);
+
+    for(ref_zmp_idx = 1; ref_zmp_idx < preview_size_; ref_zmp_idx++)
+    {
+      reference_zmp_x_(ref_zmp_idx - 1, 0) = reference_zmp_x_(ref_zmp_idx, 0);
+      reference_zmp_y_(ref_zmp_idx - 1, 0) = reference_zmp_y_(ref_zmp_idx, 0);
+    }
+
+    ref_zmp_idx = preview_size_ - 1;
+
+    if(step_idx == NO_STEP_IDX)
+    {
+      reference_zmp_x_(ref_zmp_idx, 0) = 0.5*(reference_step_data_for_addition_.position_data.right_foot_pose.x + reference_step_data_for_addition_.position_data.left_foot_pose.x);
+      reference_zmp_y_(ref_zmp_idx, 0) = 0.5*(reference_step_data_for_addition_.position_data.right_foot_pose.y + reference_step_data_for_addition_.position_data.left_foot_pose.y);
+    }
+    else
+    {
+      if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING)
+      {
+        if( added_step_data_[step_idx].position_data.moving_foot == RIGHT_FOOT_SWING )
+        {
+          support_foot_x = added_step_data_[step_idx].position_data.left_foot_pose.x;
+          support_foot_y = added_step_data_[step_idx].position_data.left_foot_pose.y;
+          support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+          desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                          - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+          desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                          + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+        }
+        else if( added_step_data_[step_idx].position_data.moving_foot == LEFT_FOOT_SWING )
+        {
+          support_foot_x = added_step_data_[step_idx].position_data.right_foot_pose.x;
+          support_foot_y = added_step_data_[step_idx].position_data.right_foot_pose.y;
+          support_foot_yaw = added_step_data_[step_idx].position_data.left_foot_pose.yaw;
+
+          desired_zmp_x = added_step_data_[step_idx].position_data.x_zmp_shift*cos(support_foot_yaw)
+                          - added_step_data_[step_idx].position_data.y_zmp_shift*sin(support_foot_yaw) + support_foot_x;
+          desired_zmp_y = added_step_data_[step_idx].position_data.x_zmp_shift*sin(support_foot_yaw)
+                          + added_step_data_[step_idx].position_data.y_zmp_shift*cos(support_foot_yaw) + support_foot_y;
+
+          reference_zmp_x_(ref_zmp_idx, 0) = desired_zmp_x;
+          reference_zmp_y_(ref_zmp_idx, 0) = desired_zmp_y;
+        }
+        else if( added_step_data_[step_idx].position_data.moving_foot == STANDING )
+        {
+          reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+          reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+        }
+        else
+        {
+          reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+          reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+        }
+      }
+      else if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING_STARTING)
+      {
+        reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+        reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+      }
+      else if(added_step_data_[step_idx].time_data.walking_state == IN_WALKING_ENDING)
+      {
+        reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+        reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+      }
+      else
+      {
+        reference_zmp_x_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.x + added_step_data_[step_idx].position_data.right_foot_pose.x)*0.5;
+        reference_zmp_y_(ref_zmp_idx, 0) = (added_step_data_[step_idx].position_data.left_foot_pose.y + added_step_data_[step_idx].position_data.right_foot_pose.y)*0.5;
+      }
+    }
+  }
+}
 void OnlineEndpointCalculator::calcEndPoint()
 {
   if(running == false)

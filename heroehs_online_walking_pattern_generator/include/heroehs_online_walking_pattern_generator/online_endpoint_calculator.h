@@ -46,6 +46,7 @@ private:
 
   void calcStepIdxData();
   void calcRefZMP();
+  void calcSmoothRefZMP();
   void calcEndPoint();
 
   int preview_size_;
