@@ -1017,7 +1017,7 @@ void OnlineEndpointCalculator::calcEndPoint()
 
   //Feet
   double x_move, y_move, z_move, a_move, b_move, c_move, z_vibe;
-  if( walking_time_ <= ssp_time_start)
+  if( walking_time_ < ssp_time_start)
   {
     x_move = foot_x_tra_.getPosition(ssp_time_start);
     y_move = foot_y_tra_.getPosition(ssp_time_start);
@@ -1157,6 +1157,7 @@ void OnlineEndpointCalculator::calcEndPoint()
     present_left_foot_pose_ = added_step_data_[0].position_data.left_foot_pose;
   }
 
+  //std::cout << walking_time_ << " " << added_step_data_[0].time_data.abs_step_time << " " << ssp_time_start << " " << ssp_time_end << " " << switching_ratio_ << " " << current_balancing_index_ << std::endl;
   walking_time_ += control_time_sec_;
 
 //  if(walking_time_ > added_step_data_[added_step_data_.size() - 1].time_data.abs_step_time - 0.5*0.001)
@@ -1183,7 +1184,7 @@ void OnlineEndpointCalculator::calcDesiredPose()
   x_lipm_ = xy_calculator_.x_lipm_;
   y_lipm_ = xy_calculator_.y_lipm_;
 
-  //std::cout << reference_zmp_x_.coeff(0,0) << " " << reference_zmp_y_.coeff(0,0) << " " << present_body_pose_ << " " << present_right_foot_pose_ << " " << present_left_foot_pose_ << std::endl;
+  //std::cout << reference_zmp_x_.coeff(0,0) << " " << reference_zmp_y_.coeff(0,0) << " " << present_body_pose_ << " " << present_right_foot_pose_ << " " << present_left_foot_pose_ <<" ";//<< std::endl;
 
   //std::cout << switching_ratio_ << std::endl;
 }
