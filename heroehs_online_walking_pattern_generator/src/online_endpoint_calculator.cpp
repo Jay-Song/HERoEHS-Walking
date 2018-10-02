@@ -41,11 +41,11 @@ static const int StepDataStatus4 = 4; //
 
 OnlineEndpointCalculator::OnlineEndpointCalculator()
 {
-  present_right_foot_pose_.x = 0.0;    present_right_foot_pose_.y = -0.105;
+  present_right_foot_pose_.x = 0.0;    present_right_foot_pose_.y = -0.09;
   present_right_foot_pose_.z = -0.55;
   present_right_foot_pose_.roll = 0.0; present_right_foot_pose_.pitch = 0.0; present_right_foot_pose_.yaw = 0.0;
 
-  present_left_foot_pose_.x = 0.0;    present_left_foot_pose_.y = 0.105;
+  present_left_foot_pose_.x = 0.0;    present_left_foot_pose_.y = 0.09;
   present_left_foot_pose_.z = -0.55;
   present_left_foot_pose_.roll = 0.0; present_left_foot_pose_.pitch = 0.0; present_left_foot_pose_.yaw = 0.0;
 
@@ -90,7 +90,7 @@ OnlineEndpointCalculator::OnlineEndpointCalculator()
   control_time_sec_ = 0.008;
 
   preview_time_sec_ = 1.6;
-  preview_size_ = round(preview_time_sec_/control_time_sec_);
+  preview_size_ = round(preview_time_sec_/control_time_sec_); //  ?
 
   running = false;
 
@@ -221,11 +221,11 @@ void OnlineEndpointCalculator::reInitialize()
 
 void OnlineEndpointCalculator::addStepData(robotis_framework::StepData step_data)
 {
-  step_data_mutex_lock_.lock();
+  step_data_mutex_lock_.lock(); // ?
   added_step_data_.push_back(step_data);
 
   calcStepIdxData();
-  step_data_mutex_lock_.unlock();
+  step_data_mutex_lock_.unlock(); // ?
 }
 
 void OnlineEndpointCalculator::eraseLastStepData()
@@ -284,7 +284,7 @@ void OnlineEndpointCalculator::calcStepIdxData()
   }
   else
   {
-    if(walking_time_ >= added_step_data_[0].time_data.abs_step_time - 0.5*0.001)
+    if(walking_time_ >= added_step_data_[0].time_data.abs_step_time - 0.5*0.001) // ?? 워킹 이 끝이 났을때
     {
       //set previous step data
       previous_step_left_foot_pose_ = added_step_data_[0].position_data.left_foot_pose;
@@ -362,7 +362,6 @@ void OnlineEndpointCalculator::calcStepIdxData()
       reference_step_data_for_addition_ = added_step_data_[step_idx_data_(0)];
       reference_step_data_for_addition_.time_data.walking_state = IN_WALKING_ENDING;
       reference_step_data_for_addition_.time_data.abs_step_time += preview_time_sec_;
-
       current_step_data_status_ = StepDataStatus3;
     }
     else
