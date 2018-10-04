@@ -14,6 +14,9 @@ OnlineWalkingPatternGenerator::OnlineWalkingPatternGenerator()
 {
   current_balancing_index_ = 0;
   switching_ratio_ = 0;
+
+  reference_foot_left_x_  = 0; reference_foot_left_y_  = 0; reference_foot_left_z_ = 0;
+  reference_foot_right_x_ = 0; reference_foot_right_y_ = 0; reference_foot_right_z_ = 0;
 }
 
 OnlineWalkingPatternGenerator::~OnlineWalkingPatternGenerator()
@@ -45,6 +48,13 @@ void OnlineWalkingPatternGenerator::process()
 // yitaek
   reference_body_x_ = x_lipm_.coeff(0);
   reference_body_y_ = y_lipm_.coeff(0);
+
+  reference_foot_left_x_  = ep_calculator_.present_left_foot_pose_.x;
+  reference_foot_left_y_  = ep_calculator_.present_left_foot_pose_.y;
+  reference_foot_left_z_  = ep_calculator_.present_left_foot_pose_.z;
+  reference_foot_right_x_ = ep_calculator_.present_right_foot_pose_.x;
+  reference_foot_right_y_ = ep_calculator_.present_right_foot_pose_.y;
+  reference_foot_right_z_ = ep_calculator_.present_right_foot_pose_.z;
 
 
   mat_g_to_rfoot_  = robotis_framework::getTransformationXYZRPY(ep_calculator_.present_right_foot_pose_.x, ep_calculator_.present_right_foot_pose_.y, ep_calculator_.present_right_foot_pose_.z,
