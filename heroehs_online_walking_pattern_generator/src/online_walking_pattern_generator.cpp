@@ -57,6 +57,8 @@ void OnlineWalkingPatternGenerator::process()
   reference_foot_right_z_ = ep_calculator_.present_right_foot_pose_.z;
 
 
+//
+
   mat_g_to_rfoot_  = robotis_framework::getTransformationXYZRPY(ep_calculator_.present_right_foot_pose_.x, ep_calculator_.present_right_foot_pose_.y, ep_calculator_.present_right_foot_pose_.z,
       ep_calculator_.present_right_foot_pose_.roll, ep_calculator_.present_right_foot_pose_.pitch, ep_calculator_.present_right_foot_pose_.yaw);
   mat_g_to_lfoot_  = robotis_framework::getTransformationXYZRPY(ep_calculator_.present_left_foot_pose_.x, ep_calculator_.present_left_foot_pose_.y, ep_calculator_.present_left_foot_pose_.z,
